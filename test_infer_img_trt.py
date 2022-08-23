@@ -111,12 +111,22 @@ def _test_engine(engine_file_path, data_input, index, num_times = 100):
         stream_handle=stream.handle
     )
     cuda.memcpy_dtoh_async(
-        output_bufs[index].host,
-        output_bufs[index].device,
+        output_bufs[0].host,
+        output_bufs[0].device,
+        stream
+    )
+    cuda.memcpy_dtoh_async(
+        output_bufs[1].host,
+        output_bufs[1].device,
+        stream
+    )
+    cuda.memcpy_dtoh_async(
+        output_bufs[2].host,
+        output_bufs[2].device,
         stream
     )
     stream.synchronize()
-    trt_outputs = [output_bufs[index].host.copy()]
+    trt_outputs = [output_bufs[0].host.copy(),output_bufs[1].host.copy(),output_bufs[2].host.copy()]
     ##########
     start = time.time()
     for _ in range(num_times):
@@ -131,12 +141,22 @@ def _test_engine(engine_file_path, data_input, index, num_times = 100):
             stream_handle=stream.handle
         )
         cuda.memcpy_dtoh_async(
-            output_bufs[index].host,
-            output_bufs[index].device,
+            output_bufs[0].host,
+            output_bufs[0].device,
+            stream
+        )
+        cuda.memcpy_dtoh_async(
+            output_bufs[1].host,
+            output_bufs[1].device,
+            stream
+        )
+        cuda.memcpy_dtoh_async(
+            output_bufs[2].host,
+            output_bufs[2].device,
             stream
         )
         stream.synchronize()
-        trt_outputs = [output_bufs[index].host.copy()]
+        trt_outputs = [output_bufs[0].host.copy(), output_bufs[1].host.copy(), output_bufs[2].host.copy()]
     
     end = time.time()
     time_use_trt = end - start
@@ -151,9 +171,10 @@ def test_engine(data_input,index, loop = 100):
     trt_outputs = None
     try: 
         trt_outputs = _test_engine(engine_file_path, data_input,index, loop)
+
     finally:
         cuda_ctx.pop()
-    return trt_outputs
+    return trt_outputs[0], trt_outputs[1], trt_outputs[2]
 
 def get_image(path):
     
@@ -170,7 +191,6 @@ def get_image(path):
     
     return image, original_image
 def post_process(pred_scores, pred_classes, mask_pred_per_image, mask_threshold):
-    mask_pred_per_image = (mask_pred_per_image[0])
     mask_pred_per_image = mask_pred_per_image.reshape((100,160,160))
     m = nn.UpsamplingBilinear2d(scale_factor=4.0)
     mask_pred_per_image  = torch.tensor(mask_pred_per_image)
@@ -196,13 +216,11 @@ def post_process(pred_scores, pred_classes, mask_pred_per_image, mask_threshold)
 def test_trt(img_input):
     img_input = np.array(img_input.cpu())
     img_input = np.ascontiguousarray(img_input, dtype=np.float32) 
-    predictions_score = test_engine(img_input, 0,1)  #Get classes
-    predictions_class = test_engine(img_input, 1,1) #Get scores
-    predictions_mask = test_engine(img_input, 2,1) #Get mask
+    predictions_score, predictions_class, predictions_mask = test_engine(img_input, 0,1)  
 
-    predictions, result = post_process(predictions_score[0], predictions_class[0], predictions_mask, mask_threshold)
+    predictions, result = post_process(predictions_score, predictions_class, predictions_mask, mask_threshold)
 
-    return predictions_class[0], predictions_score[0], predictions_mask, predictions
+    return predictions_class, predictions_score, predictions_mask, predictions
 
 
 def test_onnx(image, mask_threshold, loop=1 ):
@@ -229,7 +247,7 @@ def test_onnx(image, mask_threshold, loop=1 ):
     pred_scores = out_ort_img_scores[0][0][:]
     pred_classes= out_ort_img_class[0][0][:]
 
-    predictions, result = post_process(pred_scores, pred_classes, out_ort_img_masks, mask_threshold)
+    predictions, result = post_process(pred_scores, pred_classes, out_ort_img_masks[0], mask_threshold)
 
     return pred_classes, pred_scores, out_ort_img_masks[0], predictions, result
 
@@ -351,3 +369,4 @@ if __name__ == "__main__":
 
     mse = np.square(np.subtract(out_ort_img_scores, predictions_score)).mean()
     print('Score MSE between onnx and trt result: ', mse)
+    
