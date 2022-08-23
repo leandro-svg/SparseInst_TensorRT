@@ -31,6 +31,7 @@
  <sudo python3 test_infer_img_trt.py --config-file config_file_directory --onnx_engine onnx-model-directory --tensorRT_engine tensorRT-model-directory --input input_image_directory 
  ```
  **Result for TensorRT inference script:**
+ 
  <img
   src="results/result_onnx.png"
   alt="Alt text"
