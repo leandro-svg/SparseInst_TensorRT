@@ -13,9 +13,20 @@
  Prerequisite : Please download the weights pytorch file from hustvl/SparseInst :  'weights/sparse_inst_r50_giam_aug_2b7d68.pth'.
  
  **Build the ONNX model  :**
- """python
+ ```
  <sudo python3 convert_onnx.py --config-file config-gile --output output_directory_onnxmodel --image dummy_input --opts MODEL.WEIGHTS weights_directory>
- """
+ ```
+ 
+  **Build the TensorRT model  :**
+ ```
+ <sudo python3 build_engine.py --onnx_model onnx-model-directory --output output_directory_TensoRTModel
+ ```
+ 
+  **Infer both TensorRT and ONNX model :**
+ ```
+ <sudo python3 test_infer_img_trt.py --config-file config_file_directory --onnx_engine onnx-model-directory --tensorRT_engine tensorRT-model-directory --input input_image_directory 
+ ```
+ 
  
  
  
