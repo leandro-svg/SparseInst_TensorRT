@@ -33,7 +33,7 @@
  **Result for TensorRT inference script:**
  
  <img
-  src="results/result_onnx.png"
+  src="results/result_tensorrt.png"
   alt="Alt text"
   title="Result for TensorRT demo"
   style="display: inline-block; margin: 1 auto; max-width: 150px">
