@@ -1,0 +1,41 @@
+model:
+  meta_architecture: "SparseInst"
+  weights: "detectron2://ImageNetPretrained/torchvision/R-50.pkl"
+  pixel_mean: [123.675, 116.280, 103.530]
+  pixel_std: [58.395, 57.120, 57.375]
+  backbone:
+    freeze_at: 0
+    name: "build_resnet_backbone"
+  resnets:
+    norm: "FrozenBN"
+    depth: 50
+    stride_in_1x1: False
+    out_features: ["res3", "res4", "res5"]
+  sparse_inst:
+    encoder:
+      name: "InstanceContextEncoder"
+    decoder:
+      name: "GroupIAMDecoder"
+data:
+  train: ("coco_2017_train",)
+  test:  ("coco_2017_val",)
+  val:  ("coco_2017_val",)
+solver:
+  ims_pre_batch: 64
+  base_lr: 0.00005
+  steps: (210000, 250000)
+  max_iter: 270000
+  weight_decay: 0.05
+input:
+  min_size_train: (416, 448, 480, 512, 544, 576, 608, 640)
+  max_size_train: 853
+  min_size_test: 640
+  max_size_test: 853
+  format: "RGB"
+  mask£_format: "bitmask"
+test:
+  eval_period: 7330
+dataloader:
+  num_workers: 4
+version: 2
+output_dir: "output/sparse_inst_r50_giam_onnx"
