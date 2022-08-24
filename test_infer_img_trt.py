@@ -186,22 +186,25 @@ def get_image(path):
     device = torch.device('cuda:0')
     h, w = (640,640)
     image = cv.resize(original_image, (h, w))
+    resized_image = image
     pixel_mean = torch.Tensor([123.675, 116.280, 103.530]).to(device).view(3, 1, 1)
     pixel_std = torch.Tensor([58.395, 57.120, 57.375]).to(device).view(3, 1, 1)
     image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1)).to(device)
     image = normalizer(image, pixel_mean, pixel_std)
     image = image.repeat(1,1,1,1)
     
-    return image, original_image
+    return image, original_image, resized_image
 
 def post_process(pred_scores, pred_classes, mask_pred_per_image, mask_threshold):
+    height, width = original_image.shape[:2]
     mask_pred_per_image = mask_pred_per_image.reshape((100,160,160))
-    m = nn.UpsamplingBilinear2d(scale_factor=4.0)
+    #m = nn.UpsamplingBilinear2d(scale_factor=4.0)
+    m = nn.UpsamplingBilinear2d(size=(height, width))
     mask_pred_per_image  = torch.tensor(mask_pred_per_image)
     mask_pred = m(mask_pred_per_image.unsqueeze(0)).squeeze(0)
     mask_pred = mask_pred > mask_threshold
 
-    predictions_mask = mask_pred.reshape((100,640,640))
+    predictions_mask = mask_pred.reshape((100,height,width))
     ori_shape = (1,3,640,640)
     mask_pred = BitMasks(predictions_mask)
     results = []
@@ -268,10 +271,8 @@ def test_pytorch(original_image, loop=10):
         inputs = {"image": image, "height": height, "width": width}
         time1 = time.time()
         for i in range(loop):
-            print("inputs", inputs)
             predictions = model([inputs])[0]
         time2 = time.time()
-        print("predictions", predictions)
         time_use_pytorch = time2 - time1
         print(f'Pytorch use time {time_use_pytorch} for loop {loop}, FPS= {loop/time_use_pytorch}')
 
@@ -280,8 +281,9 @@ def test_pytorch(original_image, loop=10):
     
 
 
-def demonstration(img, original_image,  predictions, args_output):
+def demonstration(img, resized_image, original_image,  predictions, args_output):
     cpu_device = torch.device("cpu")
+    height, width = original_image.shape[:2]
     visualizer = Visualizer(original_image, metadata,
                                 instance_mode=instance_mode)
     instances = predictions["instances"]#.to(cpu_device)
@@ -289,6 +291,7 @@ def demonstration(img, original_image,  predictions, args_output):
     predictions["instances"] = instances
     vis_output = visualizer.draw_instance_predictions(
         predictions=instances)
+    #vis_output = cv.resize(vis_output, (height, width))
     if args_output:
         if os.path.isdir(args_output):
             assert os.path.isdir(args_output), args_output
@@ -393,20 +396,20 @@ if __name__ == "__main__":
     dummy_input = get_numpy_data()
     dummy = True
     if dummy:
-        img_input, original_image = get_image(path)
+        img_input, original_image, resized_image = get_image(path)
     else:
         img_input = dummy_input
 
 
 
-    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=100)
-    demonstration(img_input, original_image, predictions, args.output_tensorRT)
+    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=10)
+    demonstration(img_input, resized_image, original_image, predictions, args.output_tensorRT)
 
-    predictions = test_pytorch(original_image, loop=100)
-    demonstration(img_input, original_image, predictions, args.output_pytorch)
+    predictions = test_pytorch(original_image, loop=10)
+    demonstration(img_input, resized_image, original_image, predictions, args.output_pytorch)
     
-    out_ort_img_class, out_ort_img_scores, out_ort_img_masks, predictions, result = test_onnx(img_input, mask_threshold, loop=100)
-    demonstration(img_input, original_image, predictions, args.output_onnx)
+    out_ort_img_class, out_ort_img_scores, out_ort_img_masks, predictions, result = test_onnx(img_input, mask_threshold, loop=1)
+    demonstration(img_input, resized_image, original_image, predictions, args.output_onnx)
     
 
     keep = out_ort_img_scores > 0.1
