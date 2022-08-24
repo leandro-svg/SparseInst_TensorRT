@@ -5,6 +5,8 @@ import onnxruntime
 import pycuda.driver as cuda
 import numpy as np
 import tensorrt as trt
+from detectron2.checkpoint import DetectionCheckpointer
+
 from detectron2.data.detection_utils import read_image
 import torch
 import detectron2.data.transforms as T
@@ -18,7 +20,8 @@ import cv2 as cv
 from detectron2.structures import Instances, BitMasks
 import onnx
 import torch.nn as nn
-
+from detectron2.engine.defaults import DefaultPredictor
+from detectron2.modeling import build_model
 
 def setup_cfg(args):
     # load config from file and command-line arguments
@@ -164,7 +167,7 @@ def _test_engine(engine_file_path, data_input, index, num_times = 100):
     return trt_outputs
 
 
-def test_engine(data_input,index, loop = 100):
+def test_engine(data_input,index, loop = 10):
     engine_file_path = TENSORRT_ENGINE_PATH_PY
     cuda.init()
     cuda_ctx = cuda.Device(0).make_context()
@@ -190,6 +193,7 @@ def get_image(path):
     image = image.repeat(1,1,1,1)
     
     return image, original_image
+
 def post_process(pred_scores, pred_classes, mask_pred_per_image, mask_threshold):
     mask_pred_per_image = mask_pred_per_image.reshape((100,160,160))
     m = nn.UpsamplingBilinear2d(scale_factor=4.0)
@@ -212,18 +216,23 @@ def post_process(pred_scores, pred_classes, mask_pred_per_image, mask_threshold)
 
     return predictions, result
 
+def post_process_pytorch(predictions):
+    predictions["instances"].scores = np.array((predictions["instances"].scores).cpu())
+    predictions["instances"].pred_masks = np.array((predictions["instances"].pred_masks).cpu())
+    predictions["instances"].pred_classes = np.array((predictions["instances"].pred_classes).cpu())
+    predictions["instances"].pred_masks = BitMasks(predictions["instances"].pred_masks)
+    return predictions
 
-def test_trt(img_input):
+def test_trt(img_input, loop=10):
     img_input = np.array(img_input.cpu())
     img_input = np.ascontiguousarray(img_input, dtype=np.float32) 
-    predictions_score, predictions_class, predictions_mask = test_engine(img_input, 0,1)  
+    predictions_score, predictions_class, predictions_mask = test_engine(img_input, 0,loop)  
 
     predictions, result = post_process(predictions_score, predictions_class, predictions_mask, mask_threshold)
-
     return predictions_class, predictions_score, predictions_mask, predictions
 
 
-def test_onnx(image, mask_threshold, loop=1 ):
+def test_onnx(image, mask_threshold, loop=10 ):
     
     model = onnx.load(ONNX_SIM_MODEL_PATH)
     onnx.checker.check_model(model) 
@@ -236,7 +245,7 @@ def test_onnx(image, mask_threshold, loop=1 ):
 
     batch_size = 1
     time1 = time.time()
-    for i in range(1):
+    for i in range(loop):
         out_ort_img_class = sess.run([outputs[1]], {sess.get_inputs()[0].name: input_onnx,})
         out_ort_img_scores = sess.run([outputs[0]], {sess.get_inputs()[0].name: input_onnx,})
         out_ort_img_masks = sess.run([outputs[2]], {sess.get_inputs()[0].name: input_onnx,}) 
@@ -251,11 +260,31 @@ def test_onnx(image, mask_threshold, loop=1 ):
 
     return pred_classes, pred_scores, out_ort_img_masks[0], predictions, result
 
+def test_pytorch(original_image, loop=10):
+    with torch.no_grad():
+        height, width = original_image.shape[:2]
+        image = aug.get_transform(original_image).apply_image(original_image)
+        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
+        inputs = {"image": image, "height": height, "width": width}
+        time1 = time.time()
+        for i in range(loop):
+            print("inputs", inputs)
+            predictions = model([inputs])[0]
+        time2 = time.time()
+        print("predictions", predictions)
+        time_use_pytorch = time2 - time1
+        print(f'Pytorch use time {time_use_pytorch} for loop {loop}, FPS= {loop/time_use_pytorch}')
+
+        predictions = post_process_pytorch(predictions)
+        return predictions
+    
+
 
 def demonstration(img, original_image,  predictions, args_output):
+    cpu_device = torch.device("cpu")
     visualizer = Visualizer(original_image, metadata,
                                 instance_mode=instance_mode)
-    instances = predictions["instances"]
+    instances = predictions["instances"]#.to(cpu_device)
     instances = instances[instances.scores > 0.5]
     predictions["instances"] = instances
     vis_output = visualizer.draw_instance_predictions(
@@ -301,6 +330,12 @@ def get_parser():
         "If not given, will show output in an OpenCV window.",
     )
     parser.add_argument(
+        "--output_pytorch",
+        default="results/result_pytorch",
+        help="A file or directory to save output visualizations. "
+        "If not given, will show output in an OpenCV window.",
+    )
+    parser.add_argument(
         "--input",
         default="input/input_image/640x640.jpg",
         help="A file or directory of your input data "
@@ -339,27 +374,38 @@ if __name__ == "__main__":
 
     cfg = setup_cfg(args)
     img_format = cfg.INPUT.FORMAT
+    model = build_model(cfg)
+    model.eval()
+    model.to(cfg.MODEL.DEVICE)
     metadata = MetadataCatalog.get(
         cfg.DATASETS.TEST[0] if len(cfg.DATASETS.TEST) else "__unused"
     )
+    checkpointer = DetectionCheckpointer(model)
+    checkpointer.load(cfg.MODEL.WEIGHTS)
     instance_mode = ColorMode.IMAGE
     mask_threshold = cfg.MODEL.SPARSE_INST.MASK_THRESHOLD
+    logger.info("load Model:\n{}".format(cfg.MODEL.WEIGHTS))
+    device = torch.device('cuda:0')
+    aug = T.ResizeShortestEdge([640,640], 640)
+
+
     path = args.input
     dummy_input = get_numpy_data()
     dummy = True
     if dummy:
-        aug = T.ResizeShortestEdge(
-            [640,640], 640
-        )
         img_input, original_image = get_image(path)
     else:
         img_input = dummy_input
 
-    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input)
+
+
+    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=100)
     demonstration(img_input, original_image, predictions, args.output_tensorRT)
 
+    predictions = test_pytorch(original_image, loop=100)
+    demonstration(img_input, original_image, predictions, args.output_pytorch)
     
-    out_ort_img_class, out_ort_img_scores, out_ort_img_masks, predictions, result = test_onnx(img_input, mask_threshold, loop=1)
+    out_ort_img_class, out_ort_img_scores, out_ort_img_masks, predictions, result = test_onnx(img_input, mask_threshold, loop=100)
     demonstration(img_input, original_image, predictions, args.output_onnx)
     
 
