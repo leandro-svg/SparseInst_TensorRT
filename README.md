@@ -16,7 +16,8 @@ Some remarks :
  ```
  Pytorch use time 58.41329765319824 for loop 100, FPS= 1.7119389594078978
  TRT use time 19.569902181625366for loop 100, FPS=5.109887574905321
- ONNX use time 3314.860335588455 for loop 100, FPS= 0.03016718349379506 ```
+ ONNX use time 3314.860335588455 for loop 100, FPS= 0.03016718349379506 
+ ```
  
  <img
   src="results/result_tensorrt.png"
