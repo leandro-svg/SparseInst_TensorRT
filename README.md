@@ -38,12 +38,12 @@ Some remarks :
  
   **Build the TensorRT model  :**
  ```
- <sudo python3 build_engine.py --onnx_model onnx-model-directory --output output_directory_TensoRTModel
+ <sudo python3 convert_tensortt.py --onnx_model onnx-model-directory --output output_directory_TensoRTModel
  ```
  
   **Infer both TensorRT and ONNX model :**
  ```
- <sudo python3 test_infer_img_trt.py --config-file config_file_directory --onnx_engine onnx-model-directory --tensorRT_engine tensorRT-model-directory --input input_image_directory 
+ <sudo python3 eval_tensorrt_onnx.py --config-file config_file_directory --onnx_engine onnx-model-directory --tensorRT_engine tensorRT-model-directory --input input_image_directory 
  ```
  
  
