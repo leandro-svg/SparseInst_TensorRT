@@ -14,9 +14,9 @@ Some remarks :
  The inference speed for both ONNX and TensorRT will be print in the logger. 
  On the Nvidia Jetson TX2 that i'm using :
  ```
- TRT use time 2.8575234413146973 seconds for loop 10, FPS=3.4995338464832235
- ONNX use time 31.729691982269287 seconds for loop 1, FPS= 0.03151622147983047
- ```
+ Pytorch use time 58.41329765319824 for loop 100, FPS= 1.7119389594078978
+ TRT use time 19.569902181625366for loop 100, FPS=5.109887574905321
+ ONNX use time 3314.860335588455 for loop 100, FPS= 0.03016718349379506 ```
  
  <img
   src="results/result_tensorrt.png"
