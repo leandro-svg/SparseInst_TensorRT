@@ -9,7 +9,7 @@
   
  
  ## Prerequisites
-  - Install Pytorch (1.10.0) and TorchVision (1.11)
+  - Install Pytorch (1.10.0) and TorchVision (0.11.1)
   - Install CUDA (10.2) and cuDNN (8.0.0)
   - Install TensorRT (8.0.1.6), if you are using an nvidia edge device, TensorRT should already be installed
   - Install ONNX and ONNXruntime
