@@ -26,6 +26,11 @@
  
  Note: All the computations has been done on a Nvidia Jetson TX2 Jetpack 4.6.
  
+ | Model |  | Right-aligned |
+| :---         |     :---:      |          ---: |
+| git status   | git status     | git status    |
+| git diff     | git diff       | git diff      |
+ 
  ```
  Pytorch use time 58.41329765319824 for loop 100, FPS= 1.7119389594078978
  TRT use time 19.569902181625366for loop 100, FPS=5.109887574905321
