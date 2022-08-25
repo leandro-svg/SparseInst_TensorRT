@@ -22,7 +22,7 @@
  
  ## Result for TensorRT and ONNX inference script:
  
- The inference speed for Pytorch, ONNX and TensorRT has been compared and a shown in the table below. SparseInst running with TensoRT achieved more a less 3 times faster inference speed of SparseInst running with Pytorch.
+ The inference speed for Pytorch, ONNX and TensorRT has been compared and shown in the table below. SparseInst running with TensoRT achieved more a less 3 times faster inference speed of SparseInst than running with Pytorch.
  
  Note: All the computations has been done on a Nvidia Jetson TX2 Jetpack 4.6.
  
