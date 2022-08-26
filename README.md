@@ -10,9 +10,40 @@
  
  ## Prerequisites
   - Install Pytorch (1.10.0) and TorchVision (0.11.1)
-  - Install CUDA (10.2) and cuDNN (8.0.0)
+  ```
+  pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
+  
+  If other versions of torch are needed, select yours by putting torch==1.11.0+cu102 for example.
+  ```
+  - Install CUDA (10.2) and cuDNN (8.0.0) : https://developer.nvidia.com/cuda-downloads?target_os=Linux&target_arch=x86_64&Distribution=WSL-Ubuntu&target_version=2.0&target_type=deb_local
+  
+  For WSL-Ubuntu : 
+  ```
+  sudo wget https://developer.download.nvidia.com/compute/cuda/repos/wsl-ubuntu/x86_64/cuda-wsl-ubuntu.pin
+  sudo mv cuda-wsl-ubuntu.pin /etc/apt/preferences.d/cuda-repository-pin-600
+  sudo wget https://developer.download.nvidia.com/compute/cuda/11.7.1/local_insta
+      llers/cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
+sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
+  sudo cp /var/cuda-repo-wsl-ubuntu-11-7-local/cuda-96193861-keyring.gpg /usr/share/keyrings/
+  sudo apt-get update
+  sudo apt-get -y install cuda
+   ```
+  
   - Install TensorRT (8.0.1.6), if you are using an nvidia edge device, TensorRT should already be installed
+  ```
+  python3 -m pip install --upgrade setuptools pip
+  python3 -m pip install nvidia-pyindex
+  python3 -m pip install --upgrade nvidia-tensorrt
+  
+  Verify installation by writing  : assert tensorrt.Builder(tensorrt.Logger())
+  ```
   - Install ONNX and ONNXruntime
+  ```
+  pip install onnxruntime-gpu
+  pip install onnxruntime
+  pip install numpy protobuf==4.21.5  
+  pip install onnx
+  ```
   - Install all the other packages needed to run the original SparseInst algorithm (Should be done if you have installed Dectectron2)
   - Please download the weights pytorch file from hustvl/SparseInst :  'weights/sparse_inst_r50_giam_aug_2b7d68.pth'.
  
