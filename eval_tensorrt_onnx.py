@@ -184,7 +184,8 @@ def get_image(path):
     original_image = read_image(path, format="RGB")
 
     device = torch.device('cuda:0')
-    h, w = (640,640)
+    
+    h, w = (width_resized,height_resized)
     image = cv.resize(original_image, (h, w))
     resized_image = image
     pixel_mean = torch.Tensor([123.675, 116.280, 103.530]).to(device).view(3, 1, 1)
@@ -197,15 +198,14 @@ def get_image(path):
 
 def post_process(pred_scores, pred_classes, mask_pred_per_image, mask_threshold):
     height, width = original_image.shape[:2]
-    mask_pred_per_image = mask_pred_per_image.reshape((100,160,160))
-    #m = nn.UpsamplingBilinear2d(scale_factor=4.0)
+    mask_pred_per_image = mask_pred_per_image.reshape((100,width_resized//4,height_resized//4))
     m = nn.UpsamplingBilinear2d(size=(height, width))
     mask_pred_per_image  = torch.tensor(mask_pred_per_image)
     mask_pred = m(mask_pred_per_image.unsqueeze(0)).squeeze(0)
     mask_pred = mask_pred > mask_threshold
 
     predictions_mask = mask_pred.reshape((100,height,width))
-    ori_shape = (1,3,640,640)
+    ori_shape = (1,3,height,width)
     mask_pred = BitMasks(predictions_mask)
     results = []
     result = Instances(ori_shape)
@@ -315,6 +315,7 @@ def get_parser():
         help="path to config file",
     )
     parser.add_argument(
+        "-c",
         "--confidence-threshold",
         type=float,
         default=0.5,
@@ -355,6 +356,19 @@ def get_parser():
         help="A file or directory of your tensorRT model. ",
     )
 
+    parser.add_argument(
+        "--width_resized",
+        default=640,
+        help="Input size of ONNX model.  ",
+        type=int
+    )
+    parser.add_argument(
+        "--height_resized",
+        default=640,
+        help="Input size of ONNX model. ",
+        type=int
+    )
+
 
     parser.add_argument(
         "--opts",
@@ -373,6 +387,8 @@ if __name__ == "__main__":
 
     TENSORRT_ENGINE_PATH_PY = args.tensorRT_engine
     ONNX_SIM_MODEL_PATH = args.onnx_engine
+    width_resized,height_resized = args.width_resized,args.height_resized
+    print("type", type(width_resized))
 
 
     cfg = setup_cfg(args)
@@ -402,7 +418,7 @@ if __name__ == "__main__":
 
 
 
-    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=10)
+    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=1000)
     demonstration(img_input, resized_image, original_image, predictions, args.output_tensorRT)
 
     predictions = test_pytorch(original_image, loop=10)
@@ -418,4 +434,3 @@ if __name__ == "__main__":
 
     mse = np.square(np.subtract(out_ort_img_scores, predictions_score)).mean()
     print('Score MSE between onnx and trt result: ', mse)
-    
