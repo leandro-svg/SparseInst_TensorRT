@@ -90,8 +90,7 @@ def main():
     path = args.image
     original_image = read_image(path, format="RGB")
     print(original_image.shape)
-    image = cv2.resize(original_image, (640, 640))
-    height, width = image.shape[:2]
+    image = cv2.resize(original_image, (args.width, args.height))
 
     image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1)).to(device)
     image = normalizer(image, pixel_mean, pixel_std)
