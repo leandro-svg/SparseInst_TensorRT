@@ -1,4 +1,5 @@
 print("Evaluation of TensorRT")
+print("Eval begins")
 import os
 import time
 from tkinter import N
