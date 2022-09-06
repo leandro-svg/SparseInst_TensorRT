@@ -191,6 +191,7 @@ def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
         img_input = np.ascontiguousarray(img_input, dtype=np.float32)
 
         for _ in range(num_times):
+            start_infer = time.time()
             if cuda_ctx:
                 cuda_ctx.push()
             inputs_bufs[0].host = img_input
@@ -222,19 +223,20 @@ def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
             trt_outputs = [output_bufs[0].host.copy(), output_bufs[1].host.copy(), output_bufs[2].host.copy()]
             if cuda_ctx:
                 cuda_ctx.pop()
-
+            time_use_trt_only = time.time() - start_infer
+            print(f"TRT inference only use time {(time_use_trt_only)} for loop {(num_times)}, FPS={num_times*batch_size/time_use_trt_only}")
             if args.save_image:
                 predictions_score, predictions_class, predictions_mask = trt_outputs[0], trt_outputs[1], trt_outputs[2]
                 predictions = post_process(original_image, predictions_score, predictions_class, predictions_mask, 0.4)
                 all_predictions.append(predictions)
-                demonstration(img_input, resized_image, original_image, predictions, args.output_tensorrt, path, nb)
+                #demonstration(img_input, resized_image, original_image, predictions, args.output_tensorrt, path, nb)
                 nb += 1
     cuda_ctx.pop()
     del cuda_ctx
      
     end = time.time()
     time_use_trt = end - start
-    print(f"TRT use time {(time_use_trt)}for loop {len(args_input)}, FPS={len(args_input)*num_times*batch_size/time_use_trt}")
+    print(f"TRT algorithm use time {(time_use_trt)} for {len(args_input)} images, FPS={len(args_input)*num_times*batch_size/time_use_trt}")
     return all_predictions
 
 
