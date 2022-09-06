@@ -53,7 +53,11 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
  
  ## Model and Result for TensorRT and ONNX inference script:
  
- https://drive.google.com/file/d/17-eBWVrpnwv0ueeDsEmAqSKlNh3If4AI/view?usp=sharing
+tensorRT 320 https://drive.google.com/file/d/17-eBWVrpnwv0ueeDsEmAqSKlNh3If4AI/view?usp=sharing
+tensorRT 640 https://drive.google.com/file/d/1Kh97LZNzsuBJTeDVXwRKx8CiX7CeMI3v/view?usp=sharing
+ONNX 640 https://drive.google.com/file/d/1GEoQssyJ9MZRnEISiatF_tREpdGAnSjk/view?usp=sharing
+ONNX 320 https://drive.google.com/file/d/1H6YH3YUPaA4vO3IyIGaZNAkGBsU9xHCH/view?usp=sharing
+Pytorch https://drive.google.com/file/d/130gyxYT6r9j5Nwp5nCo_wthYPuTwa9c4/view?usp=sharing
  
  The inference speed for Pytorch, ONNX and TensorRT has been compared and shown in the table below. SparseInst running with TensoRT achieved more a less 3 times faster inference speed of SparseInst than running with Pytorch.
  
