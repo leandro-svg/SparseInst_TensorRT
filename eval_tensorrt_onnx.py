@@ -65,20 +65,11 @@ def _load_engine(engine_file_path):
     return engine
 
 def _allocate_buffer(engine):
-    binding_names=[]
-    for idx in range(100):
-        bn= engine.get_binding_name(idx)
-        if bn:
-            binding_names.append(bn)
-        else:
-            break
-    
     inputs = []
     outputs  = []
-    bindings = [None]*len(binding_names)
+    bindings = []
     stream = cuda.Stream()
-
-    for binding in binding_names:
+    for binding in engine:
         binding_idx = engine[binding]
         if binding_idx == -1:
             print("Error Binding Names!")
@@ -87,7 +78,7 @@ def _allocate_buffer(engine):
         dtype = trt.nptype(engine.get_binding_dtype(binding))
         host_mem = cuda.pagelocked_empty(size, dtype)
         device_mem = cuda.mem_alloc(host_mem.nbytes)
-        bindings[binding_idx] = int(device_mem)
+        bindings.append(int(device_mem))
 
         if engine.binding_is_input(binding):
             inputs.append(HostDeviceMem(host_mem, device_mem))
@@ -97,42 +88,21 @@ def _allocate_buffer(engine):
     print('_allocate_buffer ok.')
     return inputs, outputs, bindings, stream
 
-def _test_engine(engine_file_path, data_input, index, num_times = 100):
-    engine = _load_engine(engine_file_path)
+def _test_engine(engine, data_input, index, num_times = 100):
+    time_engine = time.time()
+    #engine = _load_engine(TENSORRT_ENGINE_PATH_PY)
+    time_alloc = time.time()
+    print("time loading engine", time_alloc - time_engine)
     inputs_bufs, output_bufs, bindings, stream = _allocate_buffer(engine)
-
+    print("time alloc", time.time() - time_alloc)
+    creation_time = time.time()
     batch_size = 1
     context = engine.create_execution_context()
-    
     inputs_bufs[0].host = data_input
-    cuda.memcpy_htod_async(
-        inputs_bufs[0].device,
-        inputs_bufs[0].host,
-        stream
-    )
-    context.execute_async_v2(
-        bindings=bindings,
-        stream_handle=stream.handle
-    )
-    cuda.memcpy_dtoh_async(
-        output_bufs[0].host,
-        output_bufs[0].device,
-        stream
-    )
-    cuda.memcpy_dtoh_async(
-        output_bufs[1].host,
-        output_bufs[1].device,
-        stream
-    )
-    cuda.memcpy_dtoh_async(
-        output_bufs[2].host,
-        output_bufs[2].device,
-        stream
-    )
-    stream.synchronize()
-    trt_outputs = [output_bufs[0].host.copy(),output_bufs[1].host.copy(),output_bufs[2].host.copy()]
     ##########
     start = time.time()
+    print("Time of Creation Context", start - creation_time)
+
     for _ in range(num_times):
         inputs_bufs[0].host = data_input
         cuda.memcpy_htod_async(
@@ -168,16 +138,19 @@ def _test_engine(engine_file_path, data_input, index, num_times = 100):
     return trt_outputs
 
 
-def test_engine(data_input,index, loop = 10):
-    engine_file_path = TENSORRT_ENGINE_PATH_PY
+def test_engine(engine ,data_input,index, loop = 10):
     cuda.init()
     cuda_ctx = cuda.Device(0).make_context()
     trt_outputs = None
     try: 
-        trt_outputs = _test_engine(engine_file_path, data_input,index, loop)
+        time_testengine = time.time()
+        engine = _load_engine(TENSORRT_ENGINE_PATH_PY)
+        trt_outputs = _test_engine(engine, data_input,index, loop)
+        print("Time for the Test engine : ", time.time()-time_testengine)
 
     finally:
         cuda_ctx.pop()
+        del cuda_ctx
     return trt_outputs[0], trt_outputs[1], trt_outputs[2]
 
 def get_image(path):
@@ -195,7 +168,6 @@ def get_image(path):
         pixel_std = torch.Tensor([58.395, 57.120, 57.375]).to(device).view(3, 1, 1)
         image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1)).to(device)
         image = normalizer(image, pixel_mean, pixel_std)
-        image = image.repeat(1,1,1,1)
     
     return image, original_image, resized_image
 
@@ -229,12 +201,15 @@ def post_process_pytorch(predictions):
     predictions["instances"].pred_masks = BitMasks(predictions["instances"].pred_masks)
     return predictions
 
-def test_trt(img_input, loop=10):
+def test_trt(engine, img_input,index, loop=10):
+    time_test = time.time()
     img_input = np.array(img_input.cpu())
-    img_input = np.ascontiguousarray(img_input, dtype=np.float32) 
-    predictions_score, predictions_class, predictions_mask = test_engine(img_input, 0,loop)  
-
+    img_input = np.ascontiguousarray(img_input, dtype=np.float32)
+    print("Time before TensorRT", time.time() - time_test)
+    predictions_score, predictions_class, predictions_mask = test_engine(engine, img_input, index,loop)  
+    print("Time of TensorRT with inference but without PostProcess", time.time() - time_test)
     predictions, result = post_process(predictions_score, predictions_class, predictions_mask, mask_threshold)
+    print("Time of TensorRT with inference and PostProcess", time.time() - time_test)
     return predictions_class, predictions_score, predictions_mask, predictions
 
 
@@ -410,17 +385,21 @@ if __name__ == "__main__":
     aug = T.ResizeShortestEdge([640,640], 640)
     loop = 1
     nb = 0
+
+    engine = _load_engine(TENSORRT_ENGINE_PATH_PY)
+
+
     if len(args.input) == 1:
         args.input = glob.glob(os.path.expanduser(args.input[0]))
         assert args.input, "The input path(s) was not found"
     for path in tqdm.tqdm(args.input):
         time_start = time.time()
         img_input, original_image, resized_image = get_image(path)
-        predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop)
+        predictions_class, predictions_score, predictions_mask, predictions = test_trt(engine ,img_input,nb, loop)
         demonstration(img_input, resized_image, original_image, predictions, args.output_tensorRT, path, nb)
         nb += 1
         algo_runtime = time.time()-time_start
-        print(f'TensorRT with Preprocess and Postprocess use time {algo_runtime} for loop {loop}, FPS= {loop/algo_runtime}')
+        print(f'TensorRT (Entiere Algorithm) : {algo_runtime}')
 
         #predictions = test_pytorch(original_image, loop=1)
         #demonstration(img_input, resized_image, original_image, predictions, args.output_pytorch, path)
