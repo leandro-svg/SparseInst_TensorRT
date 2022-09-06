@@ -1,7 +1,4 @@
 
-print("Git still works")
-print("second test")
-print("third test")
 import os
 import time
 from tkinter import N
