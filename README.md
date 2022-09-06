@@ -135,7 +135,7 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
  ```
 **Notes :**
 - You can still infer and visualize all three together, just add all the argument together
-- If you don't specify --sasve_image, it will only infer the model and not save the outputs.
+- If you don't specify --save_image, it will only infer the model and not save the outputs.
 
 
  
