@@ -434,10 +434,14 @@ if __name__ == "__main__":
                     demonstration(img_input, resized_image, original_image, predictions, args.output_pytorch, path, nb)
                     nb += 1
         if args.use_onnx:
+            start = time.time()
             nb = 0
             for path in tqdm.tqdm(args.input):
                 img_input, original_image, resized_image = get_image(path)
                 out_ort_img_class, out_ort_img_scores, out_ort_img_masks, predictions = test_onnx(img_input, mask_threshold, loop=1)
                 if args.save_image:
                     demonstration(img_input, resized_image, original_image, predictions, args.output_onnx, path, nb)
-                    nb +=1
+                    nb +=1 
+            end = time.time()
+            time_use_onnx = end - start
+            print(f"ONNX algorithm use time {(time_use_onnx)} for {len(args.input)} images, FPS={len(args.input)*loop*1/time_use_onnx}")
