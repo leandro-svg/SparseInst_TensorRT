@@ -105,6 +105,7 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
  ```
  
 **Notes :**
+- **Input argument** can either be an image or a directory of images (directory/*)
 - You can of course infer all three together, just add the argument --use_model of the model you want to infer aswell as the engine (Not for Pytorch).
 - In the terminal : 
   - *TRT inference only* time reprensents the inference speed of the model alone
