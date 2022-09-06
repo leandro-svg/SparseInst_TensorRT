@@ -57,8 +57,8 @@ def post_process(original_image ,pred_scores, pred_classes, mask_pred_per_image,
 
     processed_results = [{"instances": r} for r in results]
     predictions = processed_results[0]
-
-    return predictions
+    
+    return predictions_mask
 
 
 def post_process_pytorch(predictions):
@@ -182,6 +182,7 @@ def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
     nb = 0
     batch_size = 1
     start = time.time()
+    time_use_trt_only = 0
     if len(args_input) == 1:
         args_input = glob.glob(os.path.expanduser(args_input[0]))
         assert args_input, "The input path(s) was not found"
@@ -223,8 +224,7 @@ def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
             trt_outputs = [output_bufs[0].host.copy(), output_bufs[1].host.copy(), output_bufs[2].host.copy()]
             if cuda_ctx:
                 cuda_ctx.pop()
-            time_use_trt_only = time.time() - start_infer
-            print(f"TRT inference only use time {(time_use_trt_only)} for loop {(num_times)}, FPS={num_times*batch_size/time_use_trt_only}")
+            time_use_trt_only += time.time() - start_infer
             if args.save_image:
                 predictions_score, predictions_class, predictions_mask = trt_outputs[0], trt_outputs[1], trt_outputs[2]
                 predictions = post_process(original_image, predictions_score, predictions_class, predictions_mask, 0.4)
@@ -236,6 +236,7 @@ def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
      
     end = time.time()
     time_use_trt = end - start
+    print(f"TRT inference only use time {(time_use_trt_only)} for {len(args_input)} images, FPS={len(args_input)*num_times*batch_size/time_use_trt_only}")
     print(f"TRT algorithm use time {(time_use_trt)} for {len(args_input)} images, FPS={len(args_input)*num_times*batch_size/time_use_trt}")
     return all_predictions
 
