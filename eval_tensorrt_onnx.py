@@ -1,3 +1,4 @@
+print("Testing begins")
 import os
 import time
 from tkinter import N
