@@ -51,7 +51,9 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
  Be aware that in order to parse the model to ONNX and TensorRT, the files sparseinst.py, encoder.py and decoder.py has been modified/slightly modified, don't forget to check the modifications if you come from the initial repository.
  For now, the code works with all type of input sizes. Further implementations will be added such as multiple images and videos and different input sizes. 
  
- ## Result for TensorRT and ONNX inference script:
+ ## Model and Result for TensorRT and ONNX inference script:
+ 
+ https://drive.google.com/file/d/17-eBWVrpnwv0ueeDsEmAqSKlNh3If4AI/view?usp=sharing
  
  The inference speed for Pytorch, ONNX and TensorRT has been compared and shown in the table below. SparseInst running with TensoRT achieved more a less 3 times faster inference speed of SparseInst than running with Pytorch.
  
