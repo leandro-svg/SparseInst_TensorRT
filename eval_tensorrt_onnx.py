@@ -1,4 +1,3 @@
-
 import os
 import time
 from tkinter import N
@@ -7,7 +6,8 @@ import pycuda.driver as cuda
 import numpy as np
 import tensorrt as trt
 from detectron2.checkpoint import DetectionCheckpointer
-
+import glob
+import tqdm
 from detectron2.data.detection_utils import read_image
 import torch
 import detectron2.data.transforms as T
@@ -181,22 +181,21 @@ def test_engine(data_input,index, loop = 10):
     return trt_outputs[0], trt_outputs[1], trt_outputs[2]
 
 def get_image(path):
-    
-    original_image = read_image(path, format="RGB")
-
-    device = torch.device('cuda:0')
-    
-    h, w = (width_resized,height_resized)
-    time1  =time.time()
-    image = cv.resize(original_image, (h, w))
-    time2 = time.time()
-    print("timer", time2-time1)
-    resized_image = image
-    pixel_mean = torch.Tensor([123.675, 116.280, 103.530]).to(device).view(3, 1, 1)
-    pixel_std = torch.Tensor([58.395, 57.120, 57.375]).to(device).view(3, 1, 1)
-    image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1)).to(device)
-    image = normalizer(image, pixel_mean, pixel_std)
-    image = image.repeat(1,1,1,1)
+    dummy_input = get_numpy_data()
+    dummy = False
+    if dummy:
+        image = dummy_input
+    else:
+        original_image = read_image(path, format="RGB")
+        device = torch.device('cuda:0')
+        h, w = (width_resized,height_resized)
+        image = cv.resize(original_image, (h, w))
+        resized_image = image
+        pixel_mean = torch.Tensor([123.675, 116.280, 103.530]).to(device).view(3, 1, 1)
+        pixel_std = torch.Tensor([58.395, 57.120, 57.375]).to(device).view(3, 1, 1)
+        image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1)).to(device)
+        image = normalizer(image, pixel_mean, pixel_std)
+        image = image.repeat(1,1,1,1)
     
     return image, original_image, resized_image
 
@@ -285,9 +284,7 @@ def test_pytorch(original_image, loop=10):
     
 
 
-def demonstration(img, resized_image, original_image,  predictions, args_output):
-    cpu_device = torch.device("cpu")
-    height, width = original_image.shape[:2]
+def demonstration(img, resized_image, original_image,  predictions, args_output, path, nb):
     visualizer = Visualizer(original_image, metadata,
                                 instance_mode=instance_mode)
     instances = predictions["instances"]#.to(cpu_device)
@@ -297,6 +294,7 @@ def demonstration(img, resized_image, original_image,  predictions, args_output)
         predictions=instances)
     #vis_output = cv.resize(vis_output, (height, width))
     if args_output:
+        args_output = args_output+"_"+str(nb)
         if os.path.isdir(args_output):
             assert os.path.isdir(args_output), args_output
             out_filename = os.path.join(
@@ -346,6 +344,7 @@ def get_parser():
     parser.add_argument(
         "--input",
         default="input/input_image/640x640.jpg",
+        nargs="+",
         help="A file or directory of your input data "
         "If not given, will show output in an OpenCV window.",
     )
@@ -392,7 +391,6 @@ if __name__ == "__main__":
     TENSORRT_ENGINE_PATH_PY = args.tensorRT_engine
     ONNX_SIM_MODEL_PATH = args.onnx_engine
     width_resized,height_resized = args.width_resized,args.height_resized
-    print("type", type(width_resized))
 
 
     cfg = setup_cfg(args)
@@ -410,30 +408,22 @@ if __name__ == "__main__":
     logger.info("load Model:\n{}".format(cfg.MODEL.WEIGHTS))
     device = torch.device('cuda:0')
     aug = T.ResizeShortestEdge([640,640], 640)
-
-
-    path = args.input
-    dummy_input = get_numpy_data()
-    dummy = True
-    if dummy:
+    loop = 1
+    nb = 0
+    if len(args.input) == 1:
+        args.input = glob.glob(os.path.expanduser(args.input[0]))
+        assert args.input, "The input path(s) was not found"
+    for path in tqdm.tqdm(args.input):
+        time_start = time.time()
         img_input, original_image, resized_image = get_image(path)
-    else:
-        img_input = dummy_input
+        predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop)
+        demonstration(img_input, resized_image, original_image, predictions, args.output_tensorRT, path, nb)
+        nb += 1
+        algo_runtime = time.time()-time_start
+        print(f'TensorRT with Preprocess and Postprocess use time {algo_runtime} for loop {loop}, FPS= {loop/algo_runtime}')
 
-    
-    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=1)
-    demonstration(img_input, resized_image, original_image, predictions, args.output_tensorRT)
-
-    predictions = test_pytorch(original_image, loop=10)
-    demonstration(img_input, resized_image, original_image, predictions, args.output_pytorch)
-    
-    out_ort_img_class, out_ort_img_scores, out_ort_img_masks, predictions, result = test_onnx(img_input, mask_threshold, loop=1)
-    demonstration(img_input, resized_image, original_image, predictions, args.output_onnx)
-    
-
-    keep = out_ort_img_scores > 0.1
-    predictions_score = predictions_score[keep]
-    out_ort_img_scores = out_ort_img_scores[keep]
-
-    mse = np.square(np.subtract(out_ort_img_scores, predictions_score)).mean()
-    print('Score MSE between onnx and trt result: ', mse)
+        #predictions = test_pytorch(original_image, loop=1)
+        #demonstration(img_input, resized_image, original_image, predictions, args.output_pytorch, path)
+        
+        #out_ort_img_class, out_ort_img_scores, out_ort_img_masks, predictions, result = test_onnx(img_input, mask_threshold, loop=1)
+        #demonstration(img_input, resized_image, original_image, predictions, args.output_onnx, path)
