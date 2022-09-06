@@ -53,27 +53,24 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
  
  ## Model and Result for TensorRT and ONNX inference script:
  
-tensorRT 320 https://drive.google.com/file/d/17-eBWVrpnwv0ueeDsEmAqSKlNh3If4AI/view?usp=sharing
-tensorRT 640 https://drive.google.com/file/d/1Kh97LZNzsuBJTeDVXwRKx8CiX7CeMI3v/view?usp=sharing
-ONNX 640 https://drive.google.com/file/d/1GEoQssyJ9MZRnEISiatF_tREpdGAnSjk/view?usp=sharing
-ONNX 320 https://drive.google.com/file/d/1H6YH3YUPaA4vO3IyIGaZNAkGBsU9xHCH/view?usp=sharing
-Pytorch https://drive.google.com/file/d/130gyxYT6r9j5Nwp5nCo_wthYPuTwa9c4/view?usp=sharing
+
+
+
+
  
  The inference speed for Pytorch, ONNX and TensorRT has been compared and shown in the table below. SparseInst running with TensoRT achieved more a less 3 times faster inference speed of SparseInst than running with Pytorch.
  
  Note: All the computations has been done on a Nvidia Jetson TX2 Jetpack 4.6.
  
- | Model | t(s) |  Inference Speed| 
-| :---         |     :---:      |          ---: |
-| Pytorch   | 58.41 s    | 1.71  FPS  |
-| TensorRT     | 19.56 s      | 6.00 FPS     |
-| ONNX     | 3314.86 s      | 0.03 FPS     |
+ | Model | Input Size | t(s) |  Inference Speed| Weights
+| :---         |     :---:      |          :---: |          :---: |         ---: |
+| Pytorch   | 640   | 1.71  FPS  | [model](https://drive.google.com/file/d/130gyxYT6r9j5Nwp5nCo_wthYPuTwa9c4/view?usp=sharing)|
+| TensorRT     | 320    |  20.32 FPS     |[model](https://drive.google.com/file/d/17-eBWVrpnwv0ueeDsEmAqSKlNh3If4AI/view?usp=sharing)|
+| TensorRT     | 640    |  6.00 FPS     |[model](https://drive.google.com/file/d/1Kh97LZNzsuBJTeDVXwRKx8CiX7CeMI3v/view?usp=sharing)|
+| ONNX     | 320    | 0.22 FPS     |[model](https://drive.google.com/file/d/1H6YH3YUPaA4vO3IyIGaZNAkGBsU9xHCH/view?usp=sharing)|
+| ONNX     | 640     |0.03 FPS     |[model](https://drive.google.com/file/d/1GEoQssyJ9MZRnEISiatF_tREpdGAnSjk/view?usp=sharing)|
  
- ```
- Pytorch use time 58.41329765319824 for loop 100, FPS= 1.7119389594078978
- TRT use time 19.569902181625366for loop 100, FPS==6.005592671520124
- ONNX use time 3314.860335588455 for loop 100, FPS= 0.03016718349379506 
- ```
+
  
  <img
   src="results/result_tensorrt.png"
