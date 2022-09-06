@@ -1,5 +1,5 @@
-print("Evaluation of TensorRT")
-print("Eval begins")
+
+print("Git still works")
 import os
 import time
 from tkinter import N
@@ -188,7 +188,10 @@ def get_image(path):
     device = torch.device('cuda:0')
     
     h, w = (width_resized,height_resized)
+    time1  =time.time()
     image = cv.resize(original_image, (h, w))
+    time2 = time.time()
+    print("timer", time2-time1)
     resized_image = image
     pixel_mean = torch.Tensor([123.675, 116.280, 103.530]).to(device).view(3, 1, 1)
     pixel_std = torch.Tensor([58.395, 57.120, 57.375]).to(device).view(3, 1, 1)
@@ -418,9 +421,8 @@ if __name__ == "__main__":
     else:
         img_input = dummy_input
 
-
-
-    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=1000)
+    
+    predictions_class, predictions_score, predictions_mask, predictions = test_trt(img_input, loop=1)
     demonstration(img_input, resized_image, original_image, predictions, args.output_tensorRT)
 
     predictions = test_pytorch(original_image, loop=10)
