@@ -229,7 +229,7 @@ def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
                 predictions_score, predictions_class, predictions_mask = trt_outputs[0], trt_outputs[1], trt_outputs[2]
                 predictions = post_process(original_image, predictions_score, predictions_class, predictions_mask, 0.4)
                 all_predictions.append(predictions)
-                #demonstration(img_input, resized_image, original_image, predictions, args.output_tensorrt, path, nb)
+                demonstration(img_input, resized_image, original_image, predictions, args.output_tensorrt, path, nb)
                 nb += 1
     cuda_ctx.pop()
     del cuda_ctx
