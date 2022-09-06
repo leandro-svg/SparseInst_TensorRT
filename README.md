@@ -6,6 +6,7 @@
   - This project is built upon the excellent framework detectron2, and you should install detectron2 first, please check official installation guide for more details. (https://github.com/facebookresearch/detectron2.git)
   - For command other than TensoRT and ONNX inference, please refer to the initial repository (e.g test_net.py). 
   - If you face any problem during the parsing time, don't hesitate to drop an issue or a star if there aren't any at all :stuck_out_tongue_winking_eye:	
+  - Be aware that in order to parse the model to ONNX and TensorRT, the files sparseinst.py, encoder.py and decoder.py has been modified/slightly modified, don't forget to check the modifications if you come from the initial repository.
   
  
  ## Prerequisites
@@ -45,22 +46,15 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
   pip install onnx
   ```
   - Install all the other packages needed to run the original SparseInst algorithm (Should be done if you have installed Dectectron2)
-  - Please download the weights pytorch file from hustvl/SparseInst :  'weights/sparse_inst_r50_giam_aug_2b7d68.pth'.
  
- 
- Be aware that in order to parse the model to ONNX and TensorRT, the files sparseinst.py, encoder.py and decoder.py has been modified/slightly modified, don't forget to check the modifications if you come from the initial repository.
- For now, the code works with all type of input sizes. Further implementations will be added such as multiple images and videos and different input sizes. 
+
  
  ## Model and Result for TensorRT and ONNX inference script:
  
-
-
-
-
+ The inference speed for Pytorch, ONNX and TensorRT has been compared and shown in the table below. SparseInst running with TensoRT achieved more a less 3 times faster inference speed of SparseInst than running with Pytorch. Lowering the input size of the image can lead to a decent real-time speed.
+ The models from TensorRT and ONNX are built upon the first Pytorch listed weights in the table below : SparseInst R-50 G-IAM.
  
- The inference speed for Pytorch, ONNX and TensorRT has been compared and shown in the table below. SparseInst running with TensoRT achieved more a less 3 times faster inference speed of SparseInst than running with Pytorch.
- 
- Note: All the computations has been done on a Nvidia Jetson TX2 Jetpack 4.6.
+ *Note: All the computations has been done on a Nvidia Jetson TX2 Jetpack 4.6. Further test will be done on a Nvidia 2070 RTI*
  
  | Model | Input Size |  Inference Speed| Weights
 | :---         |     :---:      |        :---: |         ---: |
