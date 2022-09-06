@@ -62,7 +62,7 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
  
  Note: All the computations has been done on a Nvidia Jetson TX2 Jetpack 4.6.
  
- | Model | Input Size | t(s) |  Inference Speed| Weights
+ | Model | Input Size |  Inference Speed| Weights
 | :---         |     :---:      |          :---: |          :---: |         ---: |
 | Pytorch   | 640   | 1.71  FPS  | [model](https://drive.google.com/file/d/130gyxYT6r9j5Nwp5nCo_wthYPuTwa9c4/view?usp=sharing)|
 | TensorRT     | 320    |  20.32 FPS     |[model](https://drive.google.com/file/d/17-eBWVrpnwv0ueeDsEmAqSKlNh3If4AI/view?usp=sharing)|
