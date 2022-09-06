@@ -2,7 +2,7 @@
  **This repository implement the real-time Instance Segmentation Algorithm named SparseInst with TensoRT and ONNX.**
  
 ## Some remarks 
-  - The initial repository on which I build mine is from hustvl/SparseInst repository (https://github.com/hustvl/SparseInst.git), for additional information about the installation of SparseInst, refer to the original repository. 
+  - The initial repository on which I build mine is from **hustvl/SparseInst**__ repository (https://github.com/hustvl/SparseInst.git), for additional information about the installation of SparseInst, refer to the original repository. 
   - This project is built upon the excellent framework detectron2, and you should install detectron2 first, please check official installation guide for more details. (https://github.com/facebookresearch/detectron2.git)
   - For command other than TensoRT and ONNX inference, please refer to the initial repository (e.g test_net.py). 
   - If you face any problem during the parsing time, don't hesitate to drop an issue or a star if there aren't any at all :stuck_out_tongue_winking_eye:	. _**if you have compatibility problem, check the model weights uploaded in the table below and go directly in the testing section**_.
