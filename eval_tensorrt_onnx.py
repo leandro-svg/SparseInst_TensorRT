@@ -1,7 +1,7 @@
-print("Testing begins")
 import os
 import time
 from tkinter import N
+from types import new_class
 import onnxruntime
 import pycuda.driver as cuda
 import numpy as np
@@ -174,19 +174,59 @@ def _allocate_buffer(engine):
     print('_allocate_buffer ok.')
     return inputs, outputs, bindings, stream
 
-
 def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
     all_predictions = []
     engine = _load_engine(engine_file_path)
     inputs_bufs, output_bufs, bindings, stream = _allocate_buffer(engine)
     context = engine.create_execution_context()
-    nb = 0
+    nb, nc = 0, 0
     batch_size = 1
-    start = time.time()
-    time_use_trt_only = 0
+    
+
     if len(args_input) == 1:
         args_input = glob.glob(os.path.expanduser(args_input[0]))
         assert args_input, "The input path(s) was not found"
+    for path in tqdm.tqdm(args_input):
+        nc +=1
+        img_input, original_image, resized_image = get_image(path)
+        img_input = np.array(img_input.cpu())
+        img_input = np.ascontiguousarray(img_input, dtype=np.float32)
+        if cuda_ctx:
+            cuda_ctx.push()
+        inputs_bufs[0].host = img_input
+        cuda.memcpy_htod_async(
+            inputs_bufs[0].device,
+            inputs_bufs[0].host,
+            stream
+        )
+        context.execute_async_v2(
+            bindings=bindings,
+            stream_handle=stream.handle
+        )
+        cuda.memcpy_dtoh_async(
+            output_bufs[0].host,
+            output_bufs[0].device,
+            stream
+        )
+        cuda.memcpy_dtoh_async(
+            output_bufs[1].host,
+            output_bufs[1].device,
+            stream
+        )
+        cuda.memcpy_dtoh_async(
+            output_bufs[2].host,
+            output_bufs[2].device,
+            stream
+        )
+        stream.synchronize()
+        trt_outputs = [output_bufs[0].host.copy(), output_bufs[1].host.copy(), output_bufs[2].host.copy()]
+        if cuda_ctx:
+            cuda_ctx.pop()
+        if nc == 5:
+            break
+            
+    start = time.time()
+    time_use_trt_only = 0
     for path in tqdm.tqdm(args_input):
         img_input, original_image, resized_image = get_image(path)
         img_input = np.array(img_input.cpu())
@@ -230,7 +270,7 @@ def _test_engine(engine_file_path, args_input, cuda_ctx, num_times = 1):
                 predictions_score, predictions_class, predictions_mask = trt_outputs[0], trt_outputs[1], trt_outputs[2]
                 predictions = post_process(original_image, predictions_score, predictions_class, predictions_mask, 0.4)
                 all_predictions.append(predictions)
-                demonstration(img_input, resized_image, original_image, predictions, args.output_tensorrt, path, nb)
+                #demonstration(img_input, resized_image, original_image, predictions, args.output_tensorrt, path, nb)
                 nb += 1
     cuda_ctx.pop()
     del cuda_ctx
