@@ -76,6 +76,10 @@ def demonstration(img, resized_image, original_image,  predictions, args_output,
     instances = predictions["instances"]#.to(cpu_device)
     instances = instances[instances.scores > 0.5]
     predictions["instances"] = instances
+    
+    if isinstance(predictions['instances'].get_fields()['pred_masks'], BitMasks):
+        # Convert from detectron2.structures.masks.BitMasks object to numpy object for demo
+        predictions['instances'].get_fields()['pred_masks'] = predictions['instances'].get_fields()['pred_masks'].tensor.numpy()
     vis_output = visualizer.draw_instance_predictions(predictions=instances)
     #vis_output = cv.resize(vis_output, (height, width))
     if args_output:
