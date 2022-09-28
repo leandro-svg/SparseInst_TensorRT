@@ -121,7 +121,6 @@ class BaseIAMDecoder(nn.Module):
     @torch.no_grad()
     def compute_coordinates(self, x):
         h, w = x.size(2), x.size(3)
-        print("h", h)
         input_1 = -1
         input_1 = int(input_1)
         input_3 = 1
