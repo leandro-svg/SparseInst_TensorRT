@@ -19,7 +19,7 @@ __all__ = ["SparseInst"]
 @torch.jit.script
 def rescoring_mask(scores, mask_pred, masks):
     mask_pred_ = mask_pred.float()
-    return scores * ((masks * mask_pred_).sum([1, 2]) / (mask_pred_.sum([1, 2]) + 1e-6))
+    return scores * ((masks * mask_pred_).sum([1, 2]) / (mask_pred_.sum([1, 2]).double() + 1e-6).float())
 
 
 @META_ARCH_REGISTRY.register()
