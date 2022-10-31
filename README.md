@@ -10,6 +10,9 @@
   
  
  ## Prerequisites
+  <details>
+  <summary>Click me</summary>
+  
   - Install Pytorch (1.10.0) and TorchVision (0.11.1)
   ```
   pip3 install torch torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu116
@@ -47,7 +50,7 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
   ```
   - Install all the other packages needed to run the original SparseInst algorithm (Should be done if you have installed Dectectron2)
  
-
+ </details>
  
  ## Models and Results for TensorRT and ONNX inference script:
  
@@ -55,6 +58,8 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
  The models from TensorRT and ONNX are built upon the first Pytorch listed weights in the table below : SparseInst R-50 G-IAM.
  
  *Note: All the computations has been done on a Nvidia Jetson TX2 Jetpack 4.6. Further test will be done on a Nvidia 2070 RTI*
+ 
+ <div align="center">
  
  | Model | Input Size |  Inference Speed| Weights
 | :---         |     :---:      |        :---: |         ---: |
@@ -72,6 +77,7 @@ sudo dpkg -i cuda-repo-wsl-ubuntu-11-7-local_11.7.1-1_amd64.deb
   title="Result for TensorRT demo"
   style="display: inline-block; margin: 1 auto; max-width: 150px">
  
+ </div>
 
  ## Building the ONNX model  :
  
